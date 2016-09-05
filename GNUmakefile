@@ -217,7 +217,7 @@ git-handin: handin-check
 		false; \
 	fi
 
-WEBSUB := https://ccutler.scripts.mit.edu/6.828/handin.py
+WEBSUB := https://6828.scripts.mit.edu/2016/handin.py
 
 handin: tarball-pref myapi.key
 	@SUF=$(LAB); \
@@ -251,7 +251,11 @@ handin-check:
 	fi
 
 tarball: handin-check
-	git archive --format=tar HEAD | gzip > lab$(LAB)-handin.tar.gz
+	git archive --format=tar HEAD > lab$(LAB)-handin.tar
+	git diff origin/lab$(LAB) > /tmp/lab$(LAB)diff.patch
+	tar -rf lab$(LAB)-handin.tar /tmp/lab$(LAB)diff.patch
+	gzip lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
+	rm /tmp/lab$(LAB)diff.patch
 
 tarball-pref: handin-check
 	@SUF=$(LAB); \
@@ -268,7 +272,11 @@ tarball-pref: handin-check
 	else \
 		rm -f .suf; \
 	fi; \
-	git archive --prefix=lab$(LAB)/ --format=tar HEAD | gzip > lab$$SUF-handin.tar.gz
+	git archive --format=tar HEAD > lab$(LAB)-handin.tar
+	git diff origin/lab$(LAB) > /tmp/lab$(LAB)diff.patch
+	tar -rf lab$(LAB)-handin.tar /tmp/lab$(LAB)diff.patch
+	gzip lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
+	rm /tmp/lab$(LAB)diff.patch
 
 myapi.key:
 	@echo Get an API key for yourself by visiting $(WEBSUB)
