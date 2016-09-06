@@ -250,9 +250,11 @@ handin-check:
 		test "$$r" = y; \
 	fi
 
+UPSTREAM := $(shell git remote -v | grep "pdos.csail.mit.edu/6.828/2016/jos.git (fetch)" | awk '{split($$0,a," "); print a[1]}')
+
 tarball: handin-check
 	git archive --format=tar HEAD > lab$(LAB)-handin.tar
-	git diff origin/lab$(LAB) > /tmp/lab$(LAB)diff.patch
+	git diff $(UPSTREAM)/lab$(LAB) > /tmp/lab$(LAB)diff.patch
 	tar -rf lab$(LAB)-handin.tar /tmp/lab$(LAB)diff.patch
 	gzip lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
 	rm /tmp/lab$(LAB)diff.patch
@@ -273,7 +275,7 @@ tarball-pref: handin-check
 		rm -f .suf; \
 	fi; \
 	git archive --format=tar HEAD > lab$(LAB)-handin.tar
-	git diff origin/lab$(LAB) > /tmp/lab$(LAB)diff.patch
+	git diff $(UPSTREAM)/lab$(LAB) > /tmp/lab$(LAB)diff.patch
 	tar -rf lab$(LAB)-handin.tar /tmp/lab$(LAB)diff.patch
 	gzip lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
 	rm /tmp/lab$(LAB)diff.patch
