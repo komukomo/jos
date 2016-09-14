@@ -146,7 +146,7 @@ QEMUOPTS += $(QEMUEXTRA)
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
 
 gdb:
-	gdb -x .gdbinit
+	gdb -n -x .gdbinit
 
 pre-qemu: .gdbinit
 
@@ -256,7 +256,8 @@ tarball: handin-check
 	git archive --format=tar HEAD > lab$(LAB)-handin.tar
 	git diff $(UPSTREAM)/lab$(LAB) > /tmp/lab$(LAB)diff.patch
 	tar -rf lab$(LAB)-handin.tar /tmp/lab$(LAB)diff.patch
-	gzip lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
+	gzip -c lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
+	rm lab$(LAB)-handin.tar
 	rm /tmp/lab$(LAB)diff.patch
 
 tarball-pref: handin-check
@@ -277,11 +278,12 @@ tarball-pref: handin-check
 	git archive --format=tar HEAD > lab$(LAB)-handin.tar
 	git diff $(UPSTREAM)/lab$(LAB) > /tmp/lab$(LAB)diff.patch
 	tar -rf lab$(LAB)-handin.tar /tmp/lab$(LAB)diff.patch
-	gzip lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
+	gzip -c lab$(LAB)-handin.tar > lab$(LAB)-handin.tar.gz
+	rm lab$(LAB)-handin.tar
 	rm /tmp/lab$(LAB)diff.patch
 
 myapi.key:
-	@echo Get an API key for yourself by visiting $(WEBSUB)
+	@echo Get an API key for yourself by visiting $(WEBSUB)/
 	@read -p "Please enter your API key: " k; \
 	if test `echo -n "$$k" |wc -c` = 32 ; then \
 		TF=`mktemp -t tmp.XXXXXX`; \
