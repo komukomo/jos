@@ -175,7 +175,7 @@ def test_pingpong():
 @test(5)
 def test_primes():
     r.user_test("primes", stop_on_line("CPU .: 1877"), stop_on_line(".*panic"),
-                make_args=["CPUS=4"], timeout=30)
+                make_args=["CPUS=4"], timeout=60)
     r.match(E(".00000000. new env $E1"),
             E(".$E1. new env $E2"),
             E("CPU .: 2 .$E2. new env $E3"),
