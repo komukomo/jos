@@ -227,7 +227,7 @@ def mk_test_httpd(url, expect_code, expect_data):
                 # This uses the default socket timeout (5 seconds)
                 res = urlopen(fullurl)
                 got = "(Status 200)\n" + \
-                    res.read()
+                    res.read().decode('utf-8')
             except HTTPError as e:
                 got = "(Status %d)" % e.code
             except IOError as e:
