@@ -314,8 +314,10 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+	if (pp->pp_ref != 0)
+		panic("page_free: pp->pp_ref is nonzero\n");
 	if (pp->pp_ref != 0 || pp->pp_link != NULL)
-		panic("page_free: pp->pp_ref is nonzero or pp->pp_link is not NULL\n");
+		panic("page_free: pp->pp_link is not NULL\n");
 	pp->pp_link = page_free_list;
 	page_free_list = pp;
 }
@@ -357,7 +359,19 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	return NULL;
+	pte_t *pte = (pte_t *)PTE_ADDR(pgdir[PDX(va)]);
+	pte_t *pte_result = &pte[PTX(va)];
+	struct PageInfo *page;
+	if (!pte || !pte_result) {
+		physaddr_t pa;
+		if (create == false) return NULL;
+		if (!(page = page_alloc(ALLOC_ZERO))) return NULL;
+		pa = page2pa(page);
+		pgdir[PDX(va)] = pa | PTE_P | PTE_W | PTE_U;
+		page->pp_ref++;
+		return (pte_t *)KADDR(pa) + PTX(va);
+	}
+	return KADDR((physaddr_t)pte_result);
 }
 
 //
@@ -375,6 +389,11 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	size_t i;
+	for (i = 0; i < size; i += PGSIZE) {
+		pte_t *pte = pgdir_walk(pgdir, (void *)(va + i), 1);
+		*pte = (pa + i) | perm | PTE_P;
+	}
 }
 
 //
@@ -406,6 +425,15 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
+	pte_t *pte = pgdir_walk(pgdir, va, 1);
+	if (!pte)return -E_NO_MEM;
+	tlb_invalidate(pgdir, va);
+	pp->pp_ref++;
+	if (*pte) {
+		page_remove(pgdir, va);
+	}
+	*pte = page2pa(pp) | perm | PTE_P;
+	pgdir[PDX(va)] = PTE_ADDR(pgdir[PDX(va)]) | perm | PTE_P;
 	return 0;
 }
 
@@ -424,7 +452,12 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+	pte_t *pte = pgdir_walk(pgdir, va, 0);
+	if (!pte) return NULL;
+
+	struct PageInfo *result = pa2page(PTE_ADDR(*pte));
+
+	return result;
 }
 
 //
@@ -446,6 +479,15 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
+	struct PageInfo *page = page_lookup(pgdir, va, 0);
+	if (!page) return;
+
+	tlb_invalidate(pgdir, va);
+	page_decref(page);
+	pte_t *pte = pgdir_walk(pgdir, va, false);
+	if (pte) {
+		*pte = 0;
+	}
 }
 
 //
