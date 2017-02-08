@@ -59,12 +59,19 @@ static const char *trapname(int trapno)
 }
 
 
+extern unsigned handlers[];
+
 void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	int i;
+	for (i = 0; i < 256; i++) {
+		SETGATE(idt[i], 0, GD_KT, handlers[i], 0);
+	}
+	SETGATE(idt[T_SYSCALL], 1, GD_UT, handlers[T_SYSCALL], 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
