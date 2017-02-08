@@ -71,6 +71,7 @@ trap_init(void)
 	for (i = 0; i < 256; i++) {
 		SETGATE(idt[i], 0, GD_KT, handlers[i], 0);
 	}
+	SETGATE(idt[T_BRKPT], 1, GD_KT, handlers[T_BRKPT], 3);
 	SETGATE(idt[T_SYSCALL], 1, GD_UT, handlers[T_SYSCALL], 3);
 
 	// Per-CPU setup 
@@ -153,6 +154,8 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_trapno == T_PGFLT) {
 		page_fault_handler(tf);
 		return;
+	} else if (tf->tf_trapno == T_BRKPT) {
+		monitor(tf);
 	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
