@@ -345,7 +345,6 @@ load_icode(struct Env *e, uint8_t *binary)
 	struct Elf *elf = (struct Elf *)binary;
 	struct Proghdr *eph, *ph = (struct Proghdr *) (binary + (elf->e_phoff));
 	eph = ph + elf->e_phnum;
-	cprintf("binary: %x\n", binary);
 	lcr3(PADDR(e->env_pgdir));
 	for (; ph < eph; ph++)
 		if (ph->p_type == ELF_PROG_LOAD) {
@@ -499,7 +498,6 @@ env_run(struct Env *e)
 	curenv = e;
 	e->env_status = ENV_RUNNABLE;
 	e->env_runs++;
-	cprintf("load env_pgdir");
 	lcr3(PADDR(e->env_pgdir));
 	env_pop_tf(&e->env_tf);
 }
