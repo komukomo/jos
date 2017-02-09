@@ -159,7 +159,7 @@ trap_dispatch(struct Trapframe *tf)
 		monitor(tf);
 		break;
 	case T_SYSCALL:
-		syscall(
+		tf->tf_regs.reg_eax = syscall(
 				tf->tf_regs.reg_eax,
 				tf->tf_regs.reg_edx,
 				tf->tf_regs.reg_ecx,
