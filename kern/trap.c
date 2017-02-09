@@ -72,7 +72,7 @@ trap_init(void)
 		SETGATE(idt[i], 0, GD_KT, handlers[i], 0);
 	}
 	SETGATE(idt[T_BRKPT], 1, GD_KT, handlers[T_BRKPT], 3);
-	SETGATE(idt[T_SYSCALL], 1, GD_UT, handlers[T_SYSCALL], 3);
+	SETGATE(idt[T_SYSCALL], 1, GD_KT, handlers[T_SYSCALL], 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -151,11 +151,23 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
-	if (tf->tf_trapno == T_PGFLT) {
+	switch (tf->tf_trapno) {
+	case T_PGFLT:
 		page_fault_handler(tf);
 		return;
-	} else if (tf->tf_trapno == T_BRKPT) {
+	case T_BRKPT:
 		monitor(tf);
+		break;
+	case T_SYSCALL:
+		syscall(
+				tf->tf_regs.reg_eax,
+				tf->tf_regs.reg_edx,
+				tf->tf_regs.reg_ecx,
+				tf->tf_regs.reg_ebx,
+				tf->tf_regs.reg_edi,
+				tf->tf_regs.reg_esi
+				);
+		return;
 	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
