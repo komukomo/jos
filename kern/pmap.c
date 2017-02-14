@@ -315,7 +315,8 @@ page_init(void)
 	for (i = 0; i < npages; i++) {
 		pa = page2pa(&pages[i]);
 		va = page2kva(&pages[i]);
-		if (i == 0 || (IOPHYSMEM <= pa && va < (char *)boot_alloc(0))) {
+		if (i == 0 || (IOPHYSMEM <= pa && va < (char *)boot_alloc(0))
+				|| (MPENTRY_PADDR <= pa && pa < MPENTRY_PADDR + PGSIZE)) {
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
 		}else {
