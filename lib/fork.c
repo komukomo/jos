@@ -25,6 +25,8 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+	if (!(err & FEC_WR) || !(uvpt[PGNUM(addr)] & PTE_COW))
+		panic("not COW");
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -33,8 +35,14 @@ pgfault(struct UTrapframe *utf)
 	//   You should make three system calls.
 
 	// LAB 4: Your code here.
-
-	panic("pgfault not implemented");
+	addr = ROUNDDOWN(addr, PGSIZE);
+	if ((r = sys_page_map(0, addr, 0, PFTEMP, PTE_U)) < 0)
+		panic("sys_page_map: %e", r);
+	if ((r = sys_page_alloc(0, addr, PTE_P|PTE_U|PTE_W)) < 0)
+		panic("sys_page_alloc: %e", r);
+	memmove(addr, PFTEMP, PGSIZE);
+	if ((r = sys_page_unmap(0, PFTEMP)) < 0)
+		panic("sys_page_unmap: %e", r);
 }
 
 //
@@ -54,7 +62,16 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+	void *addr = (void *)(pn * PGSIZE);
+	int perm = PTE_P | PTE_U, flag = uvpt[pn] & 0xfff;
+	if ((flag & PTE_W) || (flag & PTE_COW)) {
+		perm |= PTE_COW;
+	}
+	if ((r = sys_page_map(0, addr, envid, addr, perm)) < 0)
+		panic("sys_page_map: %e", r);
+	if ((r = sys_page_map(0, addr, 0, addr, perm)) < 0)
+		panic("sys_page_map: %e", r);
+
 	return 0;
 }
 
@@ -78,7 +95,40 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	extern void _pgfault_upcall(void);
+
+	set_pgfault_handler(pgfault);
+	envid_t envid = sys_exofork();
+	if (envid < 0)
+		panic("sys_exofork: %e", envid);
+	if (envid == 0) {
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+
+	int i, j, pn;
+	for (i = 0; i < NPDENTRIES; i++) {
+		if (uvpd[i] & PTE_U) {
+			for (j = 0; j < NPTENTRIES; j++) {
+				pn = (i << 10) + j;
+				if ((uvpt[pn] & PTE_U) &&
+					pn*PGSIZE < UTOP &&
+					pn != PGNUM(UXSTACKTOP-1)) {
+					duppage(envid, pn);
+				}
+			}
+		}
+	}
+
+	int r;
+	if ((r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE),
+					PTE_P | PTE_W | PTE_U)) < 0)
+		panic("sys_page_alloc: %e", r);
+	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+
+	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
+		panic("sys_env_set_status: %e", r);
+	return envid;
 }
 
 // Challenge!
