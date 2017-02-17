@@ -70,6 +70,9 @@ _pgfault_upcall:
 	// can no longer modify any general-purpose registers.
 	// LAB 4: Your code here.
 	addl $8, %esp
+	movl 40(%esp), %eax # esp
+	movl 32(%esp), %ecx # eip
+	movl %ecx, -4(%eax) # set eip below esp
 	popal
 	addl $4, %esp
 
