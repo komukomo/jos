@@ -1,0 +1,5 @@
+[*.c]
+indent_style = tab
+
+[*.S]
+indent_style = tab
