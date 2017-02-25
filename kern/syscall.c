@@ -402,7 +402,7 @@ static int
 sys_time_msec(void)
 {
 	// LAB 6: Your code here.
-	panic("sys_time_msec not implemented");
+	return time_msec();
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -414,6 +414,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// LAB 3: Your code here.
 
 	switch (syscallno) {
+	case SYS_time_msec:
+		return sys_time_msec();
 	case SYS_cputs:
 		sys_cputs((const char *)a1, a2);
 	case SYS_cgetc:
