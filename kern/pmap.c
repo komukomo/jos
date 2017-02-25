@@ -184,9 +184,9 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-	size_t psize = sizeof(struct PageInfo);
-	boot_map_region(kern_pgdir, UPAGES + psize, ROUNDUP((npages - 1) * psize, PGSIZE), PADDR(pages + psize), PTE_U | PTE_P);
-	boot_map_region(kern_pgdir, UPAGES, ROUNDUP(psize, PGSIZE), PADDR(pages), PTE_W | PTE_P);
+	size_t psize = ROUNDUP(sizeof(struct PageInfo) * npages, PGSIZE);
+	boot_map_region(kern_pgdir, UPAGES, psize, PADDR(pages), PTE_U | PTE_P);
+	boot_map_region(kern_pgdir, (uintptr_t)pages, psize, PADDR(pages), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
