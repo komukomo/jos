@@ -9,6 +9,7 @@
 #define E1000REG(reg, offset) (void *)((unsigned)reg + offset);
 
 #define NTXDESCS 32 // the number of Transmit Descirptor
+#define NRXDESCS 32 // the number of Receive Descirptors
 
 #define E1000_STATUS 0x00008
 
@@ -70,6 +71,52 @@ struct e1000_tdh {
 #define E1000_TDT 0x03818
 struct e1000_tdt {
 	uint16_t tdt;
+	uint16_t rsv;
+};
+
+// Receive Descriptor
+struct rx_desc {
+	uint64_t addr;
+	uint16_t length;
+	uint16_t chksum;
+	uint8_t status;
+	uint8_t errors;
+	uint16_t special;
+};
+
+// Receive Control Register
+#define E1000_RCTL 0x00100
+typedef uint32_t e1000_rctl;
+
+#define E1000_RCTL_EN    1<<1  // Receiver Enable
+#define E1000_RCTL_BAM   1<<15 // Broadcast Accept Mode
+#define E1000_RCTL_RECRC 1<<26 // Strip Ethernet CRC from incoming packet
+
+// Receive Descriptor Base Address Low
+#define E1000_RDBAL 0x2800
+
+// Receive Descriptor Base Address High
+#define E1000_RDBAH 0x2804
+
+// Receive Descriptor Length
+#define E1000_RDLEN 0x2808
+struct e1000_rdlen {
+	unsigned zero : 7;
+	unsigned len  : 13;
+	unsigned rsv  : 12;
+};
+
+// Reveive Descriptor Head
+#define E1000_RDH 0x02810
+struct e1000_rdh {
+	uint16_t rdh;
+	uint16_t rsv;
+};
+
+// Reveive Descriptor Tail
+#define E1000_RDT 0x02818
+struct e1000_rdt {
+	uint16_t rdt;
 	uint16_t rsv;
 };
 

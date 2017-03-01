@@ -7,6 +7,7 @@
 
 volatile uint32_t *reg;
 struct tx_desc *txdscs;
+struct rx_desc *rxdscs;
 struct e1000_tdh *tdh;
 struct e1000_tdt *tdt;
 uintptr_t buf_addrs[NTXDESCS];
@@ -64,6 +65,39 @@ transmit_init() {
 	tipg->ipgr2 = 6;
 }
 
+static void
+receive_init() {
+	uint32_t *rdbal;
+	uint32_t *rdbah;
+	struct e1000_rdlen *rdlen;
+	struct e1000_rdh *rdh;
+	struct e1000_rdt *rdt;
+	e1000_rctl *rctl;
+
+	struct PageInfo *pp = page_alloc(ALLOC_ZERO);
+	rxdscs = page2kva(pp);
+	rdbal = (uint32_t *)E1000REG(reg, E1000_RDBAL);
+	rdbah = (uint32_t *)E1000REG(reg, E1000_RDBAH);
+	*rdbal = page2pa(pp);
+	*rdbah = 0;
+
+	int i;
+	for(i = 0; i < NRXDESCS; i++) {
+		struct PageInfo *tmppg = page_alloc(ALLOC_ZERO);
+		rxdscs[i].addr = page2pa(tmppg);
+	}
+
+	rdlen = (struct e1000_rdlen *)E1000REG(reg, E1000_RDLEN);
+	rdlen->len = NRXDESCS;
+	rdh = (struct e1000_rdh *)E1000REG(reg, E1000_RDH);
+	rdh->rdh = 0;
+	rdt = (struct e1000_rdt *)E1000REG(reg, E1000_RDT);
+	rdt->rdt = NRXDESCS - 1;
+
+	rctl = (e1000_rctl *)E1000REG(reg, E1000_RCTL);
+	*rctl = E1000_RCTL_EN | E1000_RCTL_BAM | E1000_RCTL_RECRC;
+}
+
 
 int
 e1000_transmit(void *addr, size_t size) {
@@ -89,6 +123,7 @@ e1000_attachfn(struct pci_func *pcif) {
 	uint32_t *status = (uint32_t *)E1000REG(reg, E1000_STATUS);
 	cprintf("device status: %x\n", *status);
 
+	receive_init();
 	transmit_init();
 	return 0; // What shoud I return?
 }
