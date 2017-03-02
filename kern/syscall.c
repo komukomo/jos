@@ -412,6 +412,12 @@ sys_pkt_send(void *addr, size_t length)
 	return e1000_transmit(addr, length);
 }
 
+static int
+sys_pkt_recv(void *addr, size_t *length)
+{
+	return e1000_receive(addr, length);
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -453,6 +459,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_ipc_recv((void *)a1);
 	case SYS_pkt_send:
 		return sys_pkt_send((void *)a1, a2);
+	case SYS_pkt_recv:
+		return sys_pkt_recv((void *)a1, (void *)a2);
 	default:
 		return -E_INVAL;
 	}
