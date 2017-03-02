@@ -10,13 +10,17 @@ struct tx_desc *txdscs;
 struct rx_desc *rxdscs;
 struct e1000_tdh *tdh;
 struct e1000_tdt *tdt;
+struct e1000_rdt *rdt;
 uintptr_t buf_addrs[NTXDESCS];
+void *recv_buf_addrs[NRXDESCS];
 
 #define TX_CMD_EOP 1<<0 // End Of Packet
 #define TX_CMD_RS 1<<3 // Report Status
 #define TX_CMD_RPS 1<<4 // Report Packet Sent
 #define TX_CMD_IDE 1<<7 // Interrupt Delay Enable
 #define TX_STATUS_DD 0x01 // Descriptor Done
+#define RX_STATUS_DD 0x01 // Descriptor Done
+#define RX_STATUS_EOP 1<<1 // End of Packet
 
 static void
 transmit_init() {
@@ -92,7 +96,6 @@ receive_init() {
 	uint32_t *rdbah;
 	struct e1000_rdlen *rdlen;
 	struct e1000_rdh *rdh;
-	struct e1000_rdt *rdt;
 	e1000_rctl *rctl;
 
 	uint32_t *ra0 = (uint32_t *)E1000REG(reg, E1000_RA0);
@@ -100,6 +103,7 @@ receive_init() {
 	set_receive_address(ra0, hdaddr, E1000_RAH_AV);
 
 	struct PageInfo *pp = page_alloc(ALLOC_ZERO);
+	assert(sizeof(struct rx_desc) * NRXDESCS < PGSIZE);
 	rxdscs = page2kva(pp);
 	rdbal = (uint32_t *)E1000REG(reg, E1000_RDBAL);
 	rdbah = (uint32_t *)E1000REG(reg, E1000_RDBAH);
@@ -109,6 +113,7 @@ receive_init() {
 	int i;
 	for(i = 0; i < NRXDESCS; i++) {
 		struct PageInfo *tmppg = page_alloc(ALLOC_ZERO);
+		recv_buf_addrs[i] = page2kva(tmppg);
 		rxdscs[i].addr = page2pa(tmppg);
 	}
 
@@ -138,6 +143,33 @@ e1000_transmit(void *addr, size_t size) {
 	current = next;
 	return 0;
 }
+
+enum {
+	E_RECEIVE_RETRY = 1,
+};
+
+
+int
+e1000_receive(void *addr, size_t *size) {
+	static uint32_t next = 0;
+	uint8_t errors;
+	if (!(rxdscs[next].status & RX_STATUS_DD)) {
+		return -E_RECEIVE_RETRY;
+	}
+	if (!(rxdscs[next].status & RX_STATUS_EOP)){
+		return -E_RECEIVE_RETRY;
+	}
+	if ((errors = rxdscs[next].errors) != 0){
+		cprintf("receive error: %x\n", errors);
+		return -E_RECEIVE_RETRY;
+	}
+	*size = rxdscs[next].length;
+	memcpy(addr, recv_buf_addrs[next], *size);
+	rdt->rdt = next;
+	next = (next + 1) % NRXDESCS;
+	return 0;
+}
+
 
 int
 e1000_attachfn(struct pci_func *pcif) {

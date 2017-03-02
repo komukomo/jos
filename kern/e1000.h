@@ -9,7 +9,7 @@
 #define E1000REG(reg, offset) (void *)((unsigned)reg + offset);
 
 #define NTXDESCS 32 // the number of Transmit Descirptor
-#define NRXDESCS 32 // the number of Receive Descirptors
+#define NRXDESCS 128 // the number of Receive Descirptors
 
 #define E1000_STATUS 0x00008
 
@@ -125,5 +125,6 @@ struct e1000_rdt {
 
 int e1000_attachfn(struct pci_func *pcif);
 int e1000_transmit(void *addr, size_t size);
+int e1000_receive(void *addr, size_t *size);
 
 #endif	// JOS_KERN_E1000_H
