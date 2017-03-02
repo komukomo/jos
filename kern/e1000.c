@@ -66,6 +66,27 @@ transmit_init() {
 }
 
 static void
+set_receive_address(uint32_t *ra, char *hdaddr, uint32_t rah_flag) {
+	/*
+	 * If hdaddr is AA:BB:CC:DD:EE:FF, each register will
+	 * be set as follows.
+	 *      31           0
+	 *  RAL: |DD|CC|BB|AA|
+	 *  RAH: |flags|FF|EE|
+	 */
+	uint32_t low = 0, high = 0;
+	int i;
+	for (i = 0; i < 4; i++) {
+		low |= hdaddr[i] << (8 * i);
+	}
+	for (i = 4; i < 6; i++) {
+		high |= hdaddr[i] << (8 * i);
+	}
+	ra[0] = low;
+	ra[1] = high | rah_flag;
+}
+
+static void
 receive_init() {
 	uint32_t *rdbal;
 	uint32_t *rdbah;
@@ -73,6 +94,10 @@ receive_init() {
 	struct e1000_rdh *rdh;
 	struct e1000_rdt *rdt;
 	e1000_rctl *rctl;
+
+	uint32_t *ra0 = (uint32_t *)E1000REG(reg, E1000_RA0);
+	char hdaddr[6] = {0x52, 0x54, 0x00, 0x12, 0x34, 0x56};
+	set_receive_address(ra0, hdaddr, E1000_RAH_AV);
 
 	struct PageInfo *pp = page_alloc(ALLOC_ZERO);
 	rxdscs = page2kva(pp);

@@ -120,6 +120,9 @@ struct e1000_rdt {
 	uint16_t rsv;
 };
 
+#define E1000_RA0 0x5400 // Receive Address
+#define E1000_RAH_AV 1<<31 // Address Valid
+
 int e1000_attachfn(struct pci_func *pcif);
 int e1000_transmit(void *addr, size_t size);
 
